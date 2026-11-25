@@ -1,0 +1,46 @@
+name: Compilar DotaCoach
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Descargar codigo del repositorio
+      uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Instalar librerias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Ejecutar pruebas
+      run: python -m unittest discover -s tests -v
+
+    - name: Empaquetar diagnostico portable
+      run: pyinstaller --onedir --name "DotaDiagnostico" diagnostico.py
+
+    - name: Empaquetar coach portable
+      run: pyinstaller --onedir --name "DotaCoach" main.py
+
+    - name: Subir diagnostico
+      uses: actions/upload-artifact@v4
+      with:
+        name: DotaDiagnostico-Windows
+        path: dist/DotaDiagnostico
+
+    - name: Subir coach
+      uses: actions/upload-artifact@v4
+      with:
+        name: DotaCoach-Windows
+        path: dist/DotaCoach
