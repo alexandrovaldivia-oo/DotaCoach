@@ -53,33 +53,65 @@ class ReproductorVoz:
 
         asyncio.run(_generar())
 
-    def _trabajar(self):
-        while True:
-            texto, vigente = self._cola.get()
-            ruta = os.path.join(tempfile.gettempdir(), "dotacoach_%d.mp3" % int(time.time() * 1000))
-            try:
-                if vigente is not None and not vigente():
-                    continue
-                self._sintetizar(texto, ruta)
-                if vigente is not None and not vigente():
-                    continue
-                mixer = self._iniciar_mixer()
-                mixer.music.set_volume(self.volumen)
-                mixer.music.load(ruta)
-                if vigente is not None and not vigente():
-                    mixer.music.unload()
-                    continue
-                mixer.music.play()
-                while mixer.music.get_busy():
-                    if vigente is not None and not vigente():
-                        mixer.music.stop()
-                        break
-                    time.sleep(0.1)
-                mixer.music.unload()
-            except Exception:
-                log.exception("No se pudo reproducir la voz")
-            finally:
+    def _reproducir(self, texto, vigente):
+        # Un nombre exclusivo evita colisiones incluso entre procesos.
+        ruta = None
+        musica = None
+        cargado = False
+        iniciado = False
+        try:
+            if vigente is not None and not vigente():
+                log.info("Voz descartada antes de sintetizar")
+                return
+            with tempfile.NamedTemporaryFile(prefix="dotacoach_", suffix=".mp3", delete=False) as f:
+                ruta = f.name
+            self._sintetizar(texto, ruta)
+            if vigente is not None and not vigente():
+                log.info("Voz descartada despues de sintetizar")
+                return
+            musica = self._iniciar_mixer().music
+            musica.set_volume(self.volumen)
+            musica.load(ruta)
+            cargado = True
+            if vigente is not None and not vigente():
+                log.info("Voz descartada antes de reproducir")
+                return
+            # La vigencia de entrega no limita la duración de un audio iniciado.
+            durante = getattr(vigente, "durante", vigente)
+            musica.play()
+            iniciado = True
+            log.info("Voz: reproduccion iniciada")
+            while musica.get_busy():
+                if durante is not None and not durante():
+                    musica.stop()
+                    iniciado = False
+                    log.info("Voz: reproduccion interrumpida por control de continuidad")
+                    break
+                time.sleep(0.1)
+            else:
+                log.info("Voz: reproduccion finalizada")
+                iniciado = False
+        except Exception:
+            # No imprimir contenido del consejo ni detalles de servicios externos.
+            log.warning("No se pudo reproducir la voz")
+        finally:
+            if cargado:
+                try:
+                    if iniciado:
+                        musica.stop()
+                    musica.unload()
+                except Exception:
+                    log.warning("No se pudo liberar el audio")
+            if ruta is not None:
                 try:
                     os.remove(ruta)
                 except OSError:
                     pass
+
+    def _trabajar(self):
+        while True:
+            texto, vigente = self._cola.get()
+            try:
+                self._reproducir(texto, vigente)
+            finally:
+                self._cola.task_done()

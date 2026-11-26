@@ -13,6 +13,16 @@ from .texto import limpiar_texto
 log = logging.getLogger('coach.motor')
 
 
+class _VigenciaVoz:
+    """Dos controles: admisión de audio y continuidad tras comenzar."""
+    def __init__(self, antes, durante):
+        self.antes = antes
+        self.durante = durante
+
+    def __call__(self):
+        return self.antes()
+
+
 class Motor:
     def __init__(self, cfg, proveedor, voz, ui, *, reloj=time.monotonic):
         self.cfg, self.proveedor, self.voz, self.ui = cfg, proveedor, voz, ui
@@ -22,6 +32,7 @@ class Motor:
         self._control = ControlAvisos()
         self._sesion = None
         self._generacion = 0
+        self._generacion_audio = 0
         self._ultimo_gsi = None
         self._ia_ocupada = False
         self._cerrado = False
@@ -32,6 +43,7 @@ class Motor:
             voz, tono, velocidad = persona(self.cfg.get('persona'))['voz']
             self.voz.configurar(voz, tono, velocidad, self.cfg.get('volumen', 0.9))
             self._generacion += 1
+            self._generacion_audio += 1
             if self.cfg.get('modo_competitivo'):
                 self._sesion = None
 
@@ -51,6 +63,7 @@ class Motor:
                 return False
             self._sesion = (self.estado.match_id, self.estado.heroe)
             self._generacion += 1
+            self._generacion_audio += 1
             log.info('Practica habilitada manualmente')
             return True
 
@@ -58,6 +71,7 @@ class Motor:
         with self._lock:
             self._sesion = None
             self._generacion += 1
+            self._generacion_audio += 1
 
     def cerrar(self):
         with self._lock:
@@ -81,6 +95,7 @@ class Motor:
                     or prev.fase != act.fase or 'hero.alive' not in act.conocidos
                     or ('map.clock_time' in prev.conocidos and 'map.clock_time' in act.conocidos and act.reloj < prev.reloj)):
                 self._generacion += 1
+                self._generacion_audio += 1
             practica = self._practica(ahora)
             self.ui.estado('Practica activa' if practica else 'Consejos desactivados')
             try:
@@ -95,6 +110,9 @@ class Motor:
             # Una nueva intervención invalida cualquier entrega anterior aún pendiente.
             self._generacion += 1
             generacion = self._generacion
+            # Una alerta crítica nueva puede interrumpir un consejo en curso.
+            if aviso.tipo == 'vida_baja':
+                self._generacion_audio += 1
             log.info('Intervencion seleccionada: %s', aviso.tipo)
             if aviso.usa_ia:
                 limite = self.cfg.get('max_palabras', 22)
@@ -136,10 +154,22 @@ class Motor:
 
     def _entregar(self, texto, vigente):
         texto = limpiar_texto(texto)
-        if texto and vigente():
-            self.ui.mostrar(texto, vigente=vigente)
-            if self.cfg.get('voz', True):
-                self.voz.hablar(texto, vigente=lambda: bool(self.cfg.get('voz', True)) and vigente())
+        with self._lock:
+            if texto and vigente():
+                self.ui.mostrar(texto, vigente=vigente)
+                if self.cfg.get('voz', True):
+                    generacion_audio = self._generacion_audio
+                    vivo = self.estado.vivo
+
+                    def continuar():
+                        with self._lock:
+                            return (generacion_audio == self._generacion_audio
+                                    and bool(self.cfg.get('voz', True))
+                                    and self._practica(self._reloj())
+                                    and self.estado.vivo == vivo)
+
+                    self.voz.hablar(texto, vigente=_VigenciaVoz(
+                        lambda: continuar() and vigente(), continuar))
 
     def _pedir_ia(self, solicitud, generacion):
         try:
@@ -163,5 +193,13 @@ class Motor:
     def probar_voz(self):
         texto = 'Voz de prueba. Listo para entrenar.'
         self.ui.mostrar(texto)
-        if self.cfg.get('voz', True):
-            self.voz.hablar(texto)
+        with self._lock:
+            if self.cfg.get('voz', True) and not self._cerrado:
+                generacion_audio = self._generacion_audio
+
+                def vigente():
+                    with self._lock:
+                        return (not self._cerrado and bool(self.cfg.get('voz', True))
+                                and generacion_audio == self._generacion_audio)
+
+                self.voz.hablar(texto, vigente=vigente)
