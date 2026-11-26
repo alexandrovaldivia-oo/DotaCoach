@@ -1,0 +1,899 @@
+{
+  "esquema": 1,
+  "fuente_declarada": "https://www.dota2.com/datafeed/herolist?language=spanish",
+  "parche_referencia": "7.42a",
+  "parche_verificado": false,
+  "importado_utc": "2026-11-26T23:22:30.748226+00:00",
+  "sha256_origen": "975b4f6d9117b9b53f06573e9670899827dc62a81774142e51301d936f30befd",
+  "heroes": [
+    {
+      "id": 1,
+      "clave": "npc_dota_hero_antimage",
+      "nombre": "Anti-Mage",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 2,
+      "clave": "npc_dota_hero_axe",
+      "nombre": "Axe",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 3,
+      "clave": "npc_dota_hero_bane",
+      "nombre": "Bane",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 4,
+      "clave": "npc_dota_hero_bloodseeker",
+      "nombre": "Bloodseeker",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 5,
+      "clave": "npc_dota_hero_crystal_maiden",
+      "nombre": "Crystal Maiden",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 6,
+      "clave": "npc_dota_hero_drow_ranger",
+      "nombre": "Drow Ranger",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 7,
+      "clave": "npc_dota_hero_earthshaker",
+      "nombre": "Earthshaker",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 8,
+      "clave": "npc_dota_hero_juggernaut",
+      "nombre": "Juggernaut",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 9,
+      "clave": "npc_dota_hero_mirana",
+      "nombre": "Mirana",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 10,
+      "clave": "npc_dota_hero_morphling",
+      "nombre": "Morphling",
+      "atributo": 1,
+      "complejidad": 3
+    },
+    {
+      "id": 11,
+      "clave": "npc_dota_hero_nevermore",
+      "nombre": "Shadow Fiend",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 12,
+      "clave": "npc_dota_hero_phantom_lancer",
+      "nombre": "Phantom Lancer",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 13,
+      "clave": "npc_dota_hero_puck",
+      "nombre": "Puck",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 14,
+      "clave": "npc_dota_hero_pudge",
+      "nombre": "Pudge",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 15,
+      "clave": "npc_dota_hero_razor",
+      "nombre": "Razor",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 16,
+      "clave": "npc_dota_hero_sand_king",
+      "nombre": "Sand King",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 17,
+      "clave": "npc_dota_hero_storm_spirit",
+      "nombre": "Storm Spirit",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 18,
+      "clave": "npc_dota_hero_sven",
+      "nombre": "Sven",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 19,
+      "clave": "npc_dota_hero_tiny",
+      "nombre": "Tiny",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 20,
+      "clave": "npc_dota_hero_vengefulspirit",
+      "nombre": "Vengeful Spirit",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 21,
+      "clave": "npc_dota_hero_windrunner",
+      "nombre": "Windranger",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 22,
+      "clave": "npc_dota_hero_zuus",
+      "nombre": "Zeus",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 23,
+      "clave": "npc_dota_hero_kunkka",
+      "nombre": "Kunkka",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 25,
+      "clave": "npc_dota_hero_lina",
+      "nombre": "Lina",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 26,
+      "clave": "npc_dota_hero_lion",
+      "nombre": "Lion",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 27,
+      "clave": "npc_dota_hero_shadow_shaman",
+      "nombre": "Shadow Shaman",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 28,
+      "clave": "npc_dota_hero_slardar",
+      "nombre": "Slardar",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 29,
+      "clave": "npc_dota_hero_tidehunter",
+      "nombre": "Tidehunter",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 30,
+      "clave": "npc_dota_hero_witch_doctor",
+      "nombre": "Witch Doctor",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 31,
+      "clave": "npc_dota_hero_lich",
+      "nombre": "Lich",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 32,
+      "clave": "npc_dota_hero_riki",
+      "nombre": "Riki",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 33,
+      "clave": "npc_dota_hero_enigma",
+      "nombre": "Enigma",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 34,
+      "clave": "npc_dota_hero_tinker",
+      "nombre": "Tinker",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 35,
+      "clave": "npc_dota_hero_sniper",
+      "nombre": "Sniper",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 36,
+      "clave": "npc_dota_hero_necrolyte",
+      "nombre": "Necrophos",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 37,
+      "clave": "npc_dota_hero_warlock",
+      "nombre": "Warlock",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 38,
+      "clave": "npc_dota_hero_beastmaster",
+      "nombre": "Beastmaster",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 39,
+      "clave": "npc_dota_hero_queenofpain",
+      "nombre": "Queen of Pain",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 40,
+      "clave": "npc_dota_hero_venomancer",
+      "nombre": "Venomancer",
+      "atributo": 3,
+      "complejidad": 1
+    },
+    {
+      "id": 41,
+      "clave": "npc_dota_hero_faceless_void",
+      "nombre": "Faceless Void",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 42,
+      "clave": "npc_dota_hero_skeleton_king",
+      "nombre": "Wraith King",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 43,
+      "clave": "npc_dota_hero_death_prophet",
+      "nombre": "Death Prophet",
+      "atributo": 3,
+      "complejidad": 1
+    },
+    {
+      "id": 44,
+      "clave": "npc_dota_hero_phantom_assassin",
+      "nombre": "Phantom Assassin",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 45,
+      "clave": "npc_dota_hero_pugna",
+      "nombre": "Pugna",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 46,
+      "clave": "npc_dota_hero_templar_assassin",
+      "nombre": "Templar Assassin",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 47,
+      "clave": "npc_dota_hero_viper",
+      "nombre": "Viper",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 48,
+      "clave": "npc_dota_hero_luna",
+      "nombre": "Luna",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 49,
+      "clave": "npc_dota_hero_dragon_knight",
+      "nombre": "Dragon Knight",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 50,
+      "clave": "npc_dota_hero_dazzle",
+      "nombre": "Dazzle",
+      "atributo": 3,
+      "complejidad": 1
+    },
+    {
+      "id": 51,
+      "clave": "npc_dota_hero_rattletrap",
+      "nombre": "Clockwerk",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 52,
+      "clave": "npc_dota_hero_leshrac",
+      "nombre": "Leshrac",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 53,
+      "clave": "npc_dota_hero_furion",
+      "nombre": "Nature's Prophet",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 54,
+      "clave": "npc_dota_hero_life_stealer",
+      "nombre": "Lifestealer",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 55,
+      "clave": "npc_dota_hero_dark_seer",
+      "nombre": "Dark Seer",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 56,
+      "clave": "npc_dota_hero_clinkz",
+      "nombre": "Clinkz",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 57,
+      "clave": "npc_dota_hero_omniknight",
+      "nombre": "Omniknight",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 58,
+      "clave": "npc_dota_hero_enchantress",
+      "nombre": "Enchantress",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 59,
+      "clave": "npc_dota_hero_huskar",
+      "nombre": "Huskar",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 60,
+      "clave": "npc_dota_hero_night_stalker",
+      "nombre": "Night Stalker",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 61,
+      "clave": "npc_dota_hero_broodmother",
+      "nombre": "Broodmother",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 62,
+      "clave": "npc_dota_hero_bounty_hunter",
+      "nombre": "Bounty Hunter",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 63,
+      "clave": "npc_dota_hero_weaver",
+      "nombre": "Weaver",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 64,
+      "clave": "npc_dota_hero_jakiro",
+      "nombre": "Jakiro",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 65,
+      "clave": "npc_dota_hero_batrider",
+      "nombre": "Batrider",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 66,
+      "clave": "npc_dota_hero_chen",
+      "nombre": "Chen",
+      "atributo": 2,
+      "complejidad": 3
+    },
+    {
+      "id": 67,
+      "clave": "npc_dota_hero_spectre",
+      "nombre": "Spectre",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 68,
+      "clave": "npc_dota_hero_ancient_apparition",
+      "nombre": "Ancient Apparition",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 69,
+      "clave": "npc_dota_hero_doom_bringer",
+      "nombre": "Doom",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 70,
+      "clave": "npc_dota_hero_ursa",
+      "nombre": "Ursa",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 71,
+      "clave": "npc_dota_hero_spirit_breaker",
+      "nombre": "Spirit Breaker",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 72,
+      "clave": "npc_dota_hero_gyrocopter",
+      "nombre": "Gyrocopter",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 73,
+      "clave": "npc_dota_hero_alchemist",
+      "nombre": "Alchemist",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 74,
+      "clave": "npc_dota_hero_invoker",
+      "nombre": "Invoker",
+      "atributo": 2,
+      "complejidad": 3
+    },
+    {
+      "id": 75,
+      "clave": "npc_dota_hero_silencer",
+      "nombre": "Silencer",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 76,
+      "clave": "npc_dota_hero_obsidian_destroyer",
+      "nombre": "Outworld Destroyer",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 77,
+      "clave": "npc_dota_hero_lycan",
+      "nombre": "Lycan",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 78,
+      "clave": "npc_dota_hero_brewmaster",
+      "nombre": "Brewmaster",
+      "atributo": 3,
+      "complejidad": 3
+    },
+    {
+      "id": 79,
+      "clave": "npc_dota_hero_shadow_demon",
+      "nombre": "Shadow Demon",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 80,
+      "clave": "npc_dota_hero_lone_druid",
+      "nombre": "Lone Druid",
+      "atributo": 1,
+      "complejidad": 3
+    },
+    {
+      "id": 81,
+      "clave": "npc_dota_hero_chaos_knight",
+      "nombre": "Chaos Knight",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 82,
+      "clave": "npc_dota_hero_meepo",
+      "nombre": "Meepo",
+      "atributo": 3,
+      "complejidad": 3
+    },
+    {
+      "id": 83,
+      "clave": "npc_dota_hero_treant",
+      "nombre": "Treant Protector",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 84,
+      "clave": "npc_dota_hero_ogre_magi",
+      "nombre": "Ogre Magi",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 85,
+      "clave": "npc_dota_hero_undying",
+      "nombre": "Undying",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 86,
+      "clave": "npc_dota_hero_rubick",
+      "nombre": "Rubick",
+      "atributo": 2,
+      "complejidad": 3
+    },
+    {
+      "id": 87,
+      "clave": "npc_dota_hero_disruptor",
+      "nombre": "Disruptor",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 88,
+      "clave": "npc_dota_hero_nyx_assassin",
+      "nombre": "Nyx Assassin",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 89,
+      "clave": "npc_dota_hero_naga_siren",
+      "nombre": "Naga Siren",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 90,
+      "clave": "npc_dota_hero_keeper_of_the_light",
+      "nombre": "Keeper of the Light",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 91,
+      "clave": "npc_dota_hero_wisp",
+      "nombre": "Io",
+      "atributo": 3,
+      "complejidad": 3
+    },
+    {
+      "id": 92,
+      "clave": "npc_dota_hero_visage",
+      "nombre": "Visage",
+      "atributo": 3,
+      "complejidad": 3
+    },
+    {
+      "id": 93,
+      "clave": "npc_dota_hero_slark",
+      "nombre": "Slark",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 94,
+      "clave": "npc_dota_hero_medusa",
+      "nombre": "Medusa",
+      "atributo": 1,
+      "complejidad": 1
+    },
+    {
+      "id": 95,
+      "clave": "npc_dota_hero_troll_warlord",
+      "nombre": "Troll Warlord",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 96,
+      "clave": "npc_dota_hero_centaur",
+      "nombre": "Centaur Warrunner",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 97,
+      "clave": "npc_dota_hero_magnataur",
+      "nombre": "Magnus",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 98,
+      "clave": "npc_dota_hero_shredder",
+      "nombre": "Timbersaw",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 99,
+      "clave": "npc_dota_hero_bristleback",
+      "nombre": "Bristleback",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 100,
+      "clave": "npc_dota_hero_tusk",
+      "nombre": "Tusk",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 101,
+      "clave": "npc_dota_hero_skywrath_mage",
+      "nombre": "Skywrath Mage",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 102,
+      "clave": "npc_dota_hero_abaddon",
+      "nombre": "Abaddon",
+      "atributo": 3,
+      "complejidad": 1
+    },
+    {
+      "id": 103,
+      "clave": "npc_dota_hero_elder_titan",
+      "nombre": "Elder Titan",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 104,
+      "clave": "npc_dota_hero_legion_commander",
+      "nombre": "Legion Commander",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 105,
+      "clave": "npc_dota_hero_techies",
+      "nombre": "Techies",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 106,
+      "clave": "npc_dota_hero_ember_spirit",
+      "nombre": "Ember Spirit",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 107,
+      "clave": "npc_dota_hero_earth_spirit",
+      "nombre": "Earth Spirit",
+      "atributo": 0,
+      "complejidad": 3
+    },
+    {
+      "id": 108,
+      "clave": "npc_dota_hero_abyssal_underlord",
+      "nombre": "Underlord",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 109,
+      "clave": "npc_dota_hero_terrorblade",
+      "nombre": "Terrorblade",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 110,
+      "clave": "npc_dota_hero_phoenix",
+      "nombre": "Phoenix",
+      "atributo": 0,
+      "complejidad": 2
+    },
+    {
+      "id": 111,
+      "clave": "npc_dota_hero_oracle",
+      "nombre": "Oracle",
+      "atributo": 2,
+      "complejidad": 3
+    },
+    {
+      "id": 112,
+      "clave": "npc_dota_hero_winter_wyvern",
+      "nombre": "Winter Wyvern",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 113,
+      "clave": "npc_dota_hero_arc_warden",
+      "nombre": "Arc Warden",
+      "atributo": 3,
+      "complejidad": 3
+    },
+    {
+      "id": 114,
+      "clave": "npc_dota_hero_monkey_king",
+      "nombre": "Monkey King",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 119,
+      "clave": "npc_dota_hero_dark_willow",
+      "nombre": "Dark Willow",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 120,
+      "clave": "npc_dota_hero_pangolier",
+      "nombre": "Pangolier",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 121,
+      "clave": "npc_dota_hero_grimstroke",
+      "nombre": "Grimstroke",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 123,
+      "clave": "npc_dota_hero_hoodwink",
+      "nombre": "Hoodwink",
+      "atributo": 1,
+      "complejidad": 2
+    },
+    {
+      "id": 126,
+      "clave": "npc_dota_hero_void_spirit",
+      "nombre": "Void Spirit",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 128,
+      "clave": "npc_dota_hero_snapfire",
+      "nombre": "Snapfire",
+      "atributo": 3,
+      "complejidad": 1
+    },
+    {
+      "id": 129,
+      "clave": "npc_dota_hero_mars",
+      "nombre": "Mars",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 131,
+      "clave": "npc_dota_hero_ringmaster",
+      "nombre": "Ringmaster",
+      "atributo": 2,
+      "complejidad": 2
+    },
+    {
+      "id": 135,
+      "clave": "npc_dota_hero_dawnbreaker",
+      "nombre": "Dawnbreaker",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 136,
+      "clave": "npc_dota_hero_marci",
+      "nombre": "Marci",
+      "atributo": 3,
+      "complejidad": 2
+    },
+    {
+      "id": 137,
+      "clave": "npc_dota_hero_primal_beast",
+      "nombre": "Primal Beast",
+      "atributo": 0,
+      "complejidad": 1
+    },
+    {
+      "id": 138,
+      "clave": "npc_dota_hero_muerta",
+      "nombre": "Muerta",
+      "atributo": 2,
+      "complejidad": 1
+    },
+    {
+      "id": 145,
+      "clave": "npc_dota_hero_kez",
+      "nombre": "Kez",
+      "atributo": 1,
+      "complejidad": 3
+    },
+    {
+      "id": 155,
+      "clave": "npc_dota_hero_largo",
+      "nombre": "Largo",
+      "atributo": 0,
+      "complejidad": 2
+    }
+  ]
+}
