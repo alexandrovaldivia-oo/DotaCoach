@@ -1,4 +1,0 @@
-requests
-edge-tts
-pygame
-Pillow
