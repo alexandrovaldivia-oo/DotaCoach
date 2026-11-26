@@ -1,99 +1,164 @@
-"""Une todo: estado -> eventos y reglas -> consejos -> IA/voz/pantalla."""
+"""Motor integrado. Consejos solo en una partida de práctica habilitada a mano."""
 import logging
 import threading
 import time
-from collections import deque
 
-from .eventos import detectar
-from .persona import construir_prompt, persona
-from .reglas import consejos_por_evento, consejos_por_tiempo
+from .ai.contexto import construir_contexto, preparar_respuesta, respuesta_vigente
+from .eventos_avanzados import detectar_avanzados
+from .prioridades import ControlAvisos
+from .persona import persona
 from .state import EstadoPartida, parsear
 from .texto import limpiar_texto
 
-log = logging.getLogger("coach.motor")
+log = logging.getLogger('coach.motor')
 
 
 class Motor:
-    def __init__(self, cfg, proveedor, voz, ui):
-        self.cfg = cfg
-        self.proveedor = proveedor
-        self.voz = voz
-        self.ui = ui
+    def __init__(self, cfg, proveedor, voz, ui, *, reloj=time.monotonic):
+        self.cfg, self.proveedor, self.voz, self.ui = cfg, proveedor, voz, ui
         self.estado = EstadoPartida()
-        self._lock = threading.Lock()
+        self._reloj = reloj
+        self._lock = threading.RLock()
+        self._control = ControlAvisos()
+        self._sesion = None
+        self._generacion = 0
+        self._ultimo_gsi = None
         self._ia_ocupada = False
-        self._ultima_ia = 0.0
-        self._ultimo_aviso = 0.0
-        self._memoria = deque(maxlen=8)
-        self._avisado_sin_key = False
+        self._cerrado = False
         self.aplicar_config()
 
     def aplicar_config(self):
-        voz, tono, velocidad = persona(self.cfg.get("persona"))["voz"]
-        self.voz.configurar(voz, tono, velocidad, self.cfg.get("volumen", 0.9))
-
-    # Punto de entrada: cada mensaje de GSI llega aqui.
-    def procesar(self, payload):
-        act = parsear(payload)
         with self._lock:
-            prev, self.estado = self.estado, act
+            voz, tono, velocidad = persona(self.cfg.get('persona'))['voz']
+            self.voz.configurar(voz, tono, velocidad, self.cfg.get('volumen', 0.9))
+            self._generacion += 1
+            if self.cfg.get('modo_competitivo'):
+                self._sesion = None
 
-        if act.en_partida:
-            self.ui.estado("En partida: %s, minuto %d" % (act.heroe.replace("_", " "), act.minuto))
-        else:
-            self.ui.estado("Esperando partida de Dota 2...")
+    def _actual(self, e, ahora):
+        return (not self._cerrado and not self.cfg.get('modo_competitivo')
+                and bool(e.match_id) and bool(e.heroe) and e.en_partida
+                and e.fase_activa and e.pausa is False and 'hero.alive' in e.conocidos
+                and self._ultimo_gsi is not None and 0 <= ahora-self._ultimo_gsi <= 3)
 
-        if self.cfg.get("modo_competitivo") or not act.en_partida:
-            return
+    def _practica(self, ahora):
+        return self._actual(self.estado, ahora) and self._sesion == (self.estado.match_id, self.estado.heroe)
 
-        reloj_ref = prev.reloj if prev.en_partida else act.reloj
-        consejos = consejos_por_tiempo(reloj_ref, act.reloj)
-        for evento in detectar(prev, act):
-            consejos += consejos_por_evento(evento, act)
+    def habilitar_practica(self):
+        """Confirmación humana, solo para la partida actual. GSI no certifica su modalidad."""
+        with self._lock:
+            if not self._actual(self.estado, self._reloj()):
+                return False
+            self._sesion = (self.estado.match_id, self.estado.heroe)
+            self._generacion += 1
+            log.info('Practica habilitada manualmente')
+            return True
 
-        for consejo in sorted(consejos, key=lambda c: -c.prioridad):
-            if consejo.usa_ia:
-                self._pedir_ia(consejo, act)
-            else:
-                self._emitir(consejo.texto, consejo.prioridad)
+    def deshabilitar_practica(self):
+        with self._lock:
+            self._sesion = None
+            self._generacion += 1
 
-    def _emitir(self, texto, prioridad=1):
-        ahora = time.time()
-        if prioridad < 2 and ahora - self._ultimo_aviso < 4:
-            return
-        self._ultimo_aviso = ahora
-        texto = limpiar_texto(texto)
-        self.ui.mostrar(texto)
-        if self.cfg.get("voz", True):
-            self.voz.hablar(texto)
+    def cerrar(self):
+        with self._lock:
+            self._cerrado = True
+            self.deshabilitar_practica()
 
-    def _pedir_ia(self, consejo, estado):
-        if not self.proveedor.disponible():
-            if not self._avisado_sin_key:
-                self._avisado_sin_key = True
-                self.ui.mostrar("Falta la API key para los comentarios con IA.")
-            return
-        ahora = time.time()
-        if self._ia_ocupada or ahora - self._ultima_ia < self.cfg.get("cooldown_ia", 25):
-            return
-        self._ia_ocupada = True
-        self._ultima_ia = ahora
-
-        def _trabajo():
+    def procesar(self, payload):
+        with self._lock:
+            if self._cerrado:
+                return
+            ahora = self._reloj()
+            prev, act = self.estado, parsear(payload)
+            if self._ultimo_gsi is not None and ahora-self._ultimo_gsi > 3:
+                self.deshabilitar_practica()
+            self.estado, self._ultimo_gsi = act, ahora
+            if self._sesion is not None and (self._sesion != (act.match_id, act.heroe)
+                    or not act.fase_activa or not act.en_partida or self.cfg.get('modo_competitivo')):
+                self.deshabilitar_practica()
+            if (prev.pausa != act.pausa or prev.vivo != act.vivo
+                    or prev.heroe != act.heroe or prev.match_id != act.match_id
+                    or prev.fase != act.fase or 'hero.alive' not in act.conocidos
+                    or ('map.clock_time' in prev.conocidos and 'map.clock_time' in act.conocidos and act.reloj < prev.reloj)):
+                self._generacion += 1
+            practica = self._practica(ahora)
+            self.ui.estado('Practica activa' if practica else 'Consejos desactivados')
             try:
-                prompt = construir_prompt(self.cfg.get("persona"), estado, consejo.contexto,
-                                          list(self._memoria), self.cfg.get("max_palabras", 22))
-                texto = self.proveedor.generar(prompt)
-                if texto:
-                    texto = limpiar_texto(texto)
-                    self._memoria.append(texto)
-                    self._emitir(texto, consejo.prioridad)
+                disponible = bool(self.proveedor.disponible()) if practica else False
             except Exception:
-                log.exception("Fallo al pedir un consejo a la IA")
-            finally:
+                disponible = False
+            eventos = detectar_avanzados(prev, act)
+            aviso = self._control.seleccionar(eventos, act, ahora, practica=practica,
+                        ia_disponible=disponible, ia_ocupada=self._ia_ocupada)
+            if not aviso:
+                return
+            # Una nueva intervención invalida cualquier entrega anterior aún pendiente.
+            self._generacion += 1
+            generacion = self._generacion
+            log.info('Intervencion seleccionada: %s', aviso.tipo)
+            if aviso.usa_ia:
+                limite = self.cfg.get('max_palabras', 22)
+                if type(limite) is not int or not 1 <= limite <= 40:
+                    limite = 22
+                solicitud = construir_contexto(act, aviso, ahora, practica=True,
+                            personalidad=self.cfg.get('persona', 'profesional'), max_palabras=limite)
+                if solicitud:
+                    self._ia_ocupada = True
+                    threading.Thread(target=self._pedir_ia, args=(solicitud, generacion), daemon=True).start()
+            else:
+                textos = {'vida_baja': 'Tu vida está baja. Evalúa si debes retirarte.',
+                          'mana_baja': 'Tu maná está bajo. Administra tus recursos.',
+                          'definitiva_disponible': 'Tu habilidad definitiva está disponible.'}
+                texto = textos.get(aviso.tipo)
+                if texto:
+                    self._entregar(texto, self._guardia(generacion, ahora, aviso.tipo, act.vivo))
+
+    def _guardia(self, generacion, creada, tipo, vivo, solicitud=None):
+        def vigente():
+            with self._lock:
+                ahora = self._reloj()
+                e = self.estado
+                if (generacion != self._generacion or not self._practica(ahora)
+                        or not 0 <= ahora-creada <= 8 or e.vivo != vivo):
+                    return False
+                if solicitud is not None:
+                    return respuesta_vigente(solicitud, e, ahora, practica=True,
+                            edad_estado=ahora-self._ultimo_gsi)
+                if tipo == 'vida_baja':
+                    return e.vida_porcentaje is not None and 0 < e.vida_porcentaje <= 25
+                if tipo == 'mana_baja':
+                    return e.mana_porcentaje is not None and e.mana_porcentaje <= 20
+                if tipo == 'definitiva_disponible':
+                    return any(a.definitiva is True and a.pasiva is False and a.nivel
+                               and a.recarga == 0 and a.disponible is True for a in e.detalle_habilidades)
+                return False
+        return vigente
+
+    def _entregar(self, texto, vigente):
+        texto = limpiar_texto(texto)
+        if texto and vigente():
+            self.ui.mostrar(texto, vigente=vigente)
+            if self.cfg.get('voz', True):
+                self.voz.hablar(texto, vigente=lambda: bool(self.cfg.get('voz', True)) and vigente())
+
+    def _pedir_ia(self, solicitud, generacion):
+        try:
+            vigente = self._guardia(generacion, solicitud.creada, solicitud.tipo, solicitud.vivo, solicitud)
+            if not vigente():
+                return
+            texto = preparar_respuesta(self.proveedor.generar(solicitud.prompt), solicitud)
+            if texto and vigente():
+                self._entregar(texto, vigente)
+            else:
+                log.info('Respuesta IA descartada o vacia')
+        except Exception:
+            log.warning('Fallo al generar consejo de IA')
+        finally:
+            with self._lock:
                 self._ia_ocupada = False
 
-        threading.Thread(target=_trabajo, daemon=True).start()
-
     def probar_voz(self):
-        self._emitir("Voz de prueba. Listo para entrenar.", 2)
+        texto = 'Voz de prueba. Listo para entrenar.'
+        self.ui.mostrar(texto)
+        if self.cfg.get('voz', True):
+            self.voz.hablar(texto)

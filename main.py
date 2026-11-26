@@ -35,7 +35,9 @@ def principal(cfg):
         config.guardar(cfg)
         motor_ref["motor"].aplicar_config()
 
-    overlay = Overlay(cfg, al_guardar, lambda: motor_ref["motor"].probar_voz())
+    overlay = Overlay(cfg, al_guardar, lambda: motor_ref["motor"].probar_voz(),
+                      lambda: motor_ref["motor"].habilitar_practica(),
+                      lambda: motor_ref["motor"].deshabilitar_practica())
     motor = Motor(cfg, crear_proveedor(cfg), voz, overlay)
     motor_ref["motor"] = motor
 
@@ -49,6 +51,7 @@ def principal(cfg):
     try:
         overlay.ejecutar()
     finally:
+        motor.cerrar()
         servidor.detener()
 
 

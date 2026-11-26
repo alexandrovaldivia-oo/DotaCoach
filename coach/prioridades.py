@@ -72,9 +72,9 @@ class ControlAvisos:
                 # Ventana conservadora: también puede suprimir una segunda muerte real.
                 if self._muerte_vista is not None and ahora-self._muerte_vista < 30:
                     continue
-                self._muerte_vista = ahora
                 if estado.vivo:
                     continue
+                self._muerte_vista = ahora
             elif not estado.vivo:
                 continue
             if e.tipo == 'vida_baja':

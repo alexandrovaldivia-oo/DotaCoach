@@ -128,8 +128,9 @@ class FalsaUI:
         self.mensajes = []
         self.estados = []
 
-    def mostrar(self, texto):
-        self.mensajes.append(texto)
+    def mostrar(self, texto, vigente=None):
+        if vigente is None or vigente():
+            self.mensajes.append(texto)
 
     def estado(self, texto):
         self.estados.append(texto)
@@ -142,8 +143,9 @@ class FalsaVoz:
     def configurar(self, *args, **kwargs):
         pass
 
-    def hablar(self, texto):
-        self.dichos.append(texto)
+    def hablar(self, texto, vigente=None):
+        if vigente is None or vigente():
+            self.dichos.append(texto)
 
 
 class FalsoProveedor:
@@ -169,15 +171,20 @@ class PruebasMotor(unittest.TestCase):
 
     def test_muerte_pide_consejo_a_la_ia_y_limpia_el_texto(self):
         motor, ui, voz, prov = self._motor()
-        motor.procesar(payload(reloj=300, deaths=0))
-        motor._ultimo_aviso = 0
-        motor.procesar(payload(reloj=310, deaths=1))
+        antes = payload(reloj=300, deaths=0)
+        antes["map"]["paused"] = False
+        motor.procesar(antes)
+        self.assertTrue(motor.habilitar_practica())
+        despues = payload(reloj=310, deaths=1)
+        despues["map"]["paused"] = False
+        despues["hero"]["alive"] = False
+        motor.procesar(despues)
         for _ in range(50):
             if voz.dichos:
                 break
             time.sleep(0.05)
         self.assertEqual(len(prov.prompts), 1)
-        self.assertIn("Acabo de morir", prov.prompts[0])
+        self.assertIn('"evento":"muerte"', prov.prompts[0])
         self.assertTrue(voz.dichos)
         self.assertNotIn("*", voz.dichos[-1])
 
@@ -189,10 +196,15 @@ class PruebasMotor(unittest.TestCase):
         self.assertEqual(voz.dichos, [])
         self.assertEqual(prov.prompts, [])
 
-    def test_aviso_de_runa_sin_ia(self):
+    def test_regla_temporal_legacy_no_activa_sin_verificar_parche(self):
         motor, ui, voz, prov = self._motor()
-        motor.procesar(payload(reloj=389))
-        motor._ultimo_aviso = 0
-        motor.procesar(payload(reloj=391))
-        self.assertTrue(any("sabiduría" in d for d in voz.dichos))
+        antes = payload(reloj=389)
+        antes["map"]["paused"] = False
+        motor.procesar(antes)
+        self.assertTrue(motor.habilitar_practica())
+        despues = payload(reloj=391)
+        despues["map"]["paused"] = False
+        motor.procesar(despues)
+        self.assertEqual(voz.dichos, [])
         self.assertEqual(prov.prompts, [])
+        self.assertTrue(any("sabiduría" in c.texto for c in consejos_por_tiempo(389, 391)))

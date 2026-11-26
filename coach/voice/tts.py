@@ -28,12 +28,12 @@ class ReproductorVoz:
         if volumen is not None:
             self.volumen = volumen
 
-    def hablar(self, texto):
+    def hablar(self, texto, vigente=None):
         texto = limpiar_texto(texto)
         if not texto:
             return
         try:
-            self._cola.put_nowait(texto)
+            self._cola.put_nowait((texto, vigente))
         except queue.Full:
             log.info("Cola de voz llena: se descarta un mensaje")
 
@@ -55,15 +55,25 @@ class ReproductorVoz:
 
     def _trabajar(self):
         while True:
-            texto = self._cola.get()
+            texto, vigente = self._cola.get()
             ruta = os.path.join(tempfile.gettempdir(), "dotacoach_%d.mp3" % int(time.time() * 1000))
             try:
+                if vigente is not None and not vigente():
+                    continue
                 self._sintetizar(texto, ruta)
+                if vigente is not None and not vigente():
+                    continue
                 mixer = self._iniciar_mixer()
                 mixer.music.set_volume(self.volumen)
                 mixer.music.load(ruta)
+                if vigente is not None and not vigente():
+                    mixer.music.unload()
+                    continue
                 mixer.music.play()
                 while mixer.music.get_busy():
+                    if vigente is not None and not vigente():
+                        mixer.music.stop()
+                        break
                     time.sleep(0.1)
                 mixer.music.unload()
             except Exception:
