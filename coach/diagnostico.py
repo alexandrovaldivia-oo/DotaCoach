@@ -7,7 +7,7 @@ from .gsi.setup import avisar_launch_option, crear_cfg
 
 
 def ejecutar(cfg):
-    ruta = crear_cfg(cfg["puerto"], completo=True)
+    ruta = crear_cfg(cfg["puerto"], ruta_cfg=cfg.get("ruta_cfg"))
     print("Configuracion GSI:", ruta or "NO se encontro Dota 2 (hay que crear el .cfg a mano)")
     avisar_launch_option()
 

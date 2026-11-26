@@ -14,14 +14,14 @@ COMPONENTES_BASE = ("provider", "map", "player", "hero", "abilities", "items", "
 COMPONENTES_COMPLETOS = COMPONENTES_BASE + ("buildings", "draft", "league", "wearables")
 
 
-def contenido_cfg(puerto, completo=False):
-    componentes = COMPONENTES_COMPLETOS if completo else COMPONENTES_BASE
+def contenido_cfg(puerto, completo=False, validado=False):
+    componentes = COMPONENTES_BASE[:6] if validado else (COMPONENTES_COMPLETOS if completo else COMPONENTES_BASE)
     lineas = ['"Dota 2 AI Coach"', "{",
               '    "uri"           "http://%s:%d/"' % (HOST, puerto),
               '    "timeout"       "5.0"',
               '    "buffer"        "0.1"',
               '    "throttle"      "0.5"',
-              '    "heartbeat"     "30.0"',
+              '    "heartbeat"     "%s"' % ("10.0" if validado else "30.0"),
               '    "data"', "    {"]
     for nombre in componentes:
         lineas.append('        "%s"%s"1"' % (nombre, " " * max(2, 16 - len(nombre))))
@@ -58,28 +58,52 @@ def _bibliotecas_steam():
     return carpetas
 
 
-def encontrar_carpeta_cfg():
-    vistos = set()
-    for base in _bibliotecas_steam():
-        if base in vistos:
-            continue
-        vistos.add(base)
-        ruta = os.path.join(base, SUBRUTA_DOTA)
-        if os.path.isdir(ruta):
-            return ruta
-    return None
+def encontrar_carpeta_cfg(ruta_cfg=None):
+    """Solo acepta instalaciones con ejecutable; no elige entre varias a ciegas."""
+    candidatos = [ruta_cfg] if ruta_cfg else [
+        os.path.join(base, SUBRUTA_DOTA) for base in _bibliotecas_steam()]
+    encontrados = {}
+    for ruta in candidatos:
+        ruta = os.path.abspath(ruta)
+        game = os.path.dirname(os.path.dirname(ruta))
+        exe = os.path.join(game, "bin", "win64", "dota2.exe")
+        if os.path.isdir(ruta) and os.path.isfile(exe):
+            encontrados[os.path.normcase(os.path.realpath(ruta))] = ruta
+    if len(encontrados) > 1:
+        raise OSError("Varias instalaciones de Dota 2: configura ruta_cfg en config.json: "
+                      + " | ".join(encontrados.values()))
+    if ruta_cfg and not encontrados:
+        raise OSError("ruta_cfg no corresponde a una instalacion de Dota 2: " + ruta_cfg)
+    return next(iter(encontrados.values()), None)
 
 
-def crear_cfg(puerto, completo=False):
-    """Escribe el .cfg. Devuelve la ruta creada o None si no encontro Dota 2."""
-    cfg = encontrar_carpeta_cfg()
+def crear_cfg(puerto, completo=False, ruta_cfg=None):
+    """Usa los seis componentes validados; completo es una prueba optativa."""
+    cfg = encontrar_carpeta_cfg(ruta_cfg)
     if not cfg:
         return None
     carpeta = os.path.join(cfg, "gamestate_integration")
     os.makedirs(carpeta, exist_ok=True)
     destino = os.path.join(carpeta, NOMBRE_CFG)
-    with open(destino, "w", encoding="utf-8") as f:
-        f.write(contenido_cfg(puerto, completo))
+    contenido = contenido_cfg(puerto, completo, validado=not completo)
+    # Conserva configuraciones anteriores para permitir una reversion.
+    if os.path.isfile(destino):
+        with open(destino, "rb") as f:
+            anterior = f.read()
+        if anterior.replace(b"\r\n", b"\n") == contenido.encode("ascii"):
+            return destino
+        import shutil
+        import time
+        shutil.copy2(destino, destino + ".%d.bak" % time.time_ns())
+    import tempfile
+    fd, temporal = tempfile.mkstemp(dir=carpeta, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="ascii") as f:
+            f.write(contenido)
+        os.replace(temporal, destino)
+    finally:
+        if os.path.exists(temporal):
+            os.unlink(temporal)
     log.info("Configuracion GSI escrita en %s", destino)
     return destino
 

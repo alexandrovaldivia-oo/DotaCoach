@@ -54,3 +54,19 @@ Registros de errores: carpeta `.dotacoach` de tu usuario, archivo `coach.log`.
 1. Viabilidad (hecha, falta validar GSI) - 2. Alcance - 3. Arquitectura (esta base) -
 4. Interfaz - 5. Conexion con Dota - 6. Analisis en tiempo real - 7. Motor de recomendaciones -
 8. Voz y personalizacion - 9. Analisis post-partida - 10. Pruebas y lanzamiento.
+
+## Correccion GSI (26/11/2026)
+
+La conexion real fue validada con un CFG de seis componentes: provider, map,
+player, hero, abilities, items. El diagnostico y el coach usan esta configuracion
+por defecto. Los componentes experimentales no se solicitan automaticamente.
+El descubrimiento exige game/bin/win64/dota2.exe y no elige a ciegas entre dos
+instalaciones completas. En ese caso, agregar la clave ruta_cfg al JSON existente
+~/.dotacoach/config.json, apuntando a game/dota/cfg de la instalacion correcta.
+No compartir ese JSON: puede contener la clave API.
+Los CFG anteriores se conservan como .bak si es necesario cambiar su contenido.
+El catalogo de campos se guarda al primer mensaje, aproximadamente cada diez
+segundos mientras llegan datos y al cerrar normalmente con Ctrl+C.
+Validacion pendiente: ejecutar el artefacto Windows de GitHub Actions con Dota
+cerrado, comprobar la ruta impresa, abrir Dota y recibir datos en una practica.
+No utilizar el coach en ranked hasta verificar las condiciones de Valve.

@@ -39,7 +39,7 @@ def principal(cfg):
     motor = Motor(cfg, crear_proveedor(cfg), voz, overlay)
     motor_ref["motor"] = motor
 
-    ruta = crear_cfg(cfg["puerto"])
+    ruta = crear_cfg(cfg["puerto"], ruta_cfg=cfg.get("ruta_cfg"))
     if not ruta:
         overlay.mostrar("No encontre Dota 2. Revisa que Steam este instalado.")
     avisar_launch_option()
