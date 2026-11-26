@@ -39,27 +39,40 @@ class ProveedorGemini(ProveedorIA):
                 "mime_type": "image/jpeg",
                 "data": base64.b64encode(imagen_jpeg).decode("ascii")}})
         cuerpo = {"contents": [{"parts": partes}],
-                  "generationConfig": {"temperature": 0.85, "maxOutputTokens": 160}}
+                  "generationConfig": {"temperature": 0.85, "maxOutputTokens": 512}}
         url = "https://%s/v1beta/models/%s:generateContent" % (_DOMINIO_GEMINI, self.cfg.get("modelo"))
         try:
             r = requests.post(url, json=cuerpo, timeout=10,
                               headers={"Content-Type": "application/json",
                                        "x-goog-api-key": self.cfg.get("api_key", "")})
         except requests.RequestException as error:
-            log.warning("Fallo de red con Gemini: %s", error)
+            log.warning("Fallo de red con Gemini: %s", type(error).__name__)
             return None
         if r.status_code != 200:
-            log.warning("Gemini respondio %s: %s", r.status_code, r.text[:200])
+            log.warning("Gemini respondio %s", r.status_code)
             return None
         try:
             datos = r.json()
         except ValueError:
+            log.warning("Gemini: JSON invalido")
+            return None
+        if not isinstance(datos, dict):
+            log.warning("Gemini: estructura invalida")
             return None
         for candidato in datos.get("candidates") or []:
-            for parte in (candidato.get("content") or {}).get("parts") or []:
-                texto = parte.get("text")
-                if texto:
-                    return texto.strip()
+            motivo = candidato.get("finishReason")
+            log.info("Gemini HTTP 200; finalizacion: %s", motivo if motivo in
+                     {"STOP", "MAX_TOKENS", "SAFETY", "RECITATION", "OTHER"} else "NO_CLASIFICADA")
+            if motivo != "STOP":
+                continue
+            textos = [parte["text"].strip() for parte in
+                      (candidato.get("content") or {}).get("parts") or []
+                      if parte.get("thought") is not True and isinstance(parte.get("text"), str)]
+            texto = " ".join(t for t in textos if t)
+            if texto:
+                log.info("Gemini: texto final recibido; palabras=%d", len(texto.split()))
+                return texto
+        log.info("Gemini: sin texto final completo")
         return None
 
 

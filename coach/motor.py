@@ -3,7 +3,7 @@ import logging
 import threading
 import time
 
-from .ai.contexto import construir_contexto, preparar_respuesta, respuesta_vigente
+from .ai.contexto import construir_contexto, evaluar_respuesta, respuesta_vigente
 from .eventos_avanzados import detectar_avanzados
 from .prioridades import ControlAvisos
 from .persona import persona
@@ -146,11 +146,14 @@ class Motor:
             vigente = self._guardia(generacion, solicitud.creada, solicitud.tipo, solicitud.vivo, solicitud)
             if not vigente():
                 return
-            texto = preparar_respuesta(self.proveedor.generar(solicitud.prompt), solicitud)
-            if texto and vigente():
-                self._entregar(texto, vigente)
+            texto, causa = evaluar_respuesta(self.proveedor.generar(solicitud.prompt), solicitud)
+            if not texto:
+                log.info('Respuesta IA descartada: %s', causa)
+            elif not vigente():
+                log.info('Respuesta IA descartada: contexto_no_vigente')
             else:
-                log.info('Respuesta IA descartada o vacia')
+                log.info('Respuesta IA aceptada para entrega')
+                self._entregar(texto, vigente)
         except Exception:
             log.warning('Fallo al generar consejo de IA')
         finally:

@@ -107,13 +107,23 @@ def respuesta_vigente(solicitud, estado, ahora, *, practica=False, edad_estado=N
     return True
 
 
-def preparar_respuesta(texto, solicitud):
-    """Filtro conservador, no garantiza veracidad semántica ni nombres correctos."""
-    if not isinstance(texto,str) or re.search(r'\b(?:npc_dota_\w+|item_\w+|[a-z]+_[a-z0-9_]+)\b', texto, re.I):
-        return None
+def evaluar_respuesta(texto, solicitud):
+    """Devuelve texto y causa estable, sin registrar contenido privado."""
+    if not isinstance(texto, str) or not texto.strip():
+        return None, 'vacia'
+    if re.search(r'\b(?:npc_dota_\w+|item_\w+|[a-z]+_[a-z0-9_]+)\b', texto, re.I):
+        return None, 'identificador_interno'
     limpio = limpiar_texto(texto)
     limpio = ''.join(c for c in limpio if c.isalnum() or c in ' .,;:¿?¡!áéíóúüñÁÉÍÓÚÜÑ-')
     limpio = ' '.join(limpio.split())
-    if not limpio or limpio.upper().rstrip('.') == 'SILENCIO' or len(limpio.split()) > solicitud.max_palabras:
-        return None
-    return limpio
+    if not limpio:
+        return None, 'vacia_tras_limpieza'
+    if limpio.upper().rstrip('.') == 'SILENCIO':
+        return None, 'silencio_solicitado'
+    if len(limpio.split()) > solicitud.max_palabras:
+        return None, 'limite_palabras'
+    return limpio, 'aceptada'
+
+
+def preparar_respuesta(texto, solicitud):
+    return evaluar_respuesta(texto, solicitud)[0]
