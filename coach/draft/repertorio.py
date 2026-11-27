@@ -9,7 +9,7 @@ from .ultimo_pick import UltimoPick
 class Preferencia:
     rol: int
     heroe_id: int
-    dominio: int
+    dominio: int | None
 
 
 @dataclass(frozen=True)
@@ -18,7 +18,7 @@ class Repertorio:
 
 
 def cargar_repertorio(datos, *, catalogo):
-    """Esquema 1: entradas con rol, heroe_id y dominio declarado de 1 a 3."""
+    """Esquema 1: entradas con rol, heroe_id y dominio declarado de 1 a 3, o null si se desconoce."""
     if (not isinstance(datos, Mapping) or type(datos.get('esquema')) is not int
             or datos['esquema'] != 1 or not isinstance(datos.get('entradas'), list)):
         raise ValueError('Formato de repertorio invalido')
@@ -28,12 +28,13 @@ def cargar_repertorio(datos, *, catalogo):
             raise ValueError('Entrada de repertorio invalida')
         rol, ident, dominio = (fila[k] for k in ('rol', 'heroe_id', 'dominio'))
         if (type(rol) is not int or rol not in ROLES or type(ident) is not int
-                or catalogo.por_id(ident) is None or type(dominio) is not int
-                or dominio not in (1, 2, 3) or (rol, ident) in vistos):
+                or catalogo.por_id(ident) is None
+                or (dominio is not None and (type(dominio) is not int or dominio not in (1, 2, 3)))
+                or (rol, ident) in vistos):
             raise ValueError('Preferencia invalida o duplicada')
         vistos.add((rol, ident))
         entradas.append(Preferencia(rol, ident, dominio))
-    return Repertorio(tuple(sorted(entradas, key=lambda e: (e.rol, -e.dominio, e.heroe_id))))
+    return Repertorio(tuple(sorted(entradas, key=lambda e: (e.rol, -(e.dominio or 0), e.heroe_id))))
 
 
 def candidatos_personales(repertorio, ultimo_pick, *, rol):
