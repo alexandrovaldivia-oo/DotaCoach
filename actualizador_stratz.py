@@ -7,6 +7,7 @@ from coach.draft.stratz_descargador import cargar_catalogo
 from coach.draft.stratz_almacen import AlmacenStratz
 from coach.draft.stratz_validador import validar
 from coach.draft.stratz_cliente import extraer
+from coach.draft.stratz_lector import auditar, consultar
 
 
 def catalogo():
@@ -37,7 +38,7 @@ def main():
     import tkinter as tk
     from tkinter import ttk, filedialog, messagebox
     root = tk.Tk(); root.title('DotaCoach - Importador STRATZ experimental')
-    root.geometry('650x380'); root.minsize(600, 380)
+    root.geometry('650x430'); root.minsize(600, 430)
     panel = ttk.Frame(root, padding=20); panel.pack(fill='both', expand=True)
     ttk.Label(panel, text='Importacion local de estadisticas', font=('Segoe UI', 15, 'bold')).pack(anchor='w')
     ttk.Label(panel, text='Solo fuera de partida. Sin red. Fuente: https://stratz.com/', wraplength=580).pack(anchor='w', pady=8)
@@ -60,6 +61,20 @@ def main():
         except Exception as exc:
             messagebox.showerror('Importacion rechazada', str(exc))
     ttk.Button(panel, text='Validar e importar', command=ejecutar).pack(anchor='w', pady=12)
+    def verificar():
+        try:
+            informe = auditar(base_local(), cargar_catalogo(catalogo()))
+            lineas = [f"Integridad SQLite: {informe['integridad']}", f"Relaciones totales: {informe['total']}", f"Lotes: {len(informe['lotes'])}"]
+            for lote in informe['lotes']:
+                lineas.append(f"Semana {lote['semana']} | Heroe {lote['heroe']} | {lote['rango']} | Aliados {lote['aliados']} | Enemigos {lote['enemigos']}")
+            dato = consultar(base_local(), 2968, 'CRUSADER_ARCHON', 39, 'vs', 13)
+            if dato:
+                lineas.append(f"Prueba QoP vs Puck: {dato['victorias']}/{dato['partidas']} ({dato['tasa']:.2%})")
+            lineas.append('Rango no certificado. Vigencia no verificada.')
+            messagebox.showinfo('Verificacion de solo lectura', '\n'.join(lineas))
+        except Exception as exc:
+            messagebox.showerror('Verificacion fallida', str(exc))
+    ttk.Button(panel, text='Verificar base existente', command=verificar).pack(anchor='w')
     root.mainloop(); return 0
 
 
