@@ -1,0 +1,7 @@
+# Etapa 3.9 — Integración manual offline
+
+Objetivo: unir validación de disponibilidad, repertorio, auditoría SQLite y clasificación descriptiva sin conexión ni captura de juego. Solo escenarios archivados con cuatro aliados y cuatro enemigos, vetos explícitos y candidatos confirmados manualmente. No constituye una recomendación competitiva. Los datos de STRATZ siguen sin certificación de rango ni vigencia; no descargar ni redistribuir masivamente sin autorización.
+
+API: `coach.draft.sesion_offline.analizar_sesion` recibe catálogo, repertorio, ruta SQLite existente, semana, rango, rol, listas de IDs de aliados, enemigos, vetados y disponibles, confirmaciones archivado/fase/turno, y modo. Las listas no pueden solaparse. El lado y casilla son convenciones sintéticas para reutilizar el validador, no observaciones reales. El resultado conserva explicaciones, cobertura y ausencia de recomendación. No cambia SQLite. El indicador de STRATZ no se utiliza para ordenar. No se implementa aún interfaz gráfica ni integración con main.py.
+
+Pruebas: `python -m unittest discover -s tests -p 'test_sesion_offline.py' -v` y suite habitual de CI. La base simulada tiene cobertura completa para un héroe, no para el segundo. Se verifica rechazo de entradas contradictorias y no modificación de la base. Para revertir, revertir el commit o eliminar únicamente los tres archivos de este parche. No requiere cambios de workflow ni instalaciones en el equipo del usuario.
