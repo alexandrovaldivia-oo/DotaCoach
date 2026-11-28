@@ -11,6 +11,8 @@ on:
       - tests/test_sesion_offline.py
       - tests/test_lenguaje_natural.py
       - tests/test_chat_offline.py
+      - tests/test_whisper_enigma.py
+      - tests/test_voz_enigma.py
       - .github/workflows/draft-offline.yml
 permissions:
   contents: read
@@ -22,12 +24,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m pip install Pillow requests pyinstaller
+      - run: python -m pip install Pillow requests pyinstaller sounddevice
       - run: python -m unittest discover -s tests -p 'test_draft_interfaz.py' -v
       - run: python -m unittest discover -s tests -p 'test_sesion_offline.py' -v
       - run: python -m unittest discover -s tests -p 'test_lenguaje_natural.py' -v
       - run: python -m unittest discover -s tests -p 'test_chat_offline.py' -v
-      - run: python -m PyInstaller --onedir --name DotaDraftOffline --add-data 'coach/datos/recursos/heroes_valve.json;coach/datos/recursos' draft_offline.py
+      - run: python -m unittest discover -s tests -p 'test_whisper_enigma.py' -v
+      - run: python -m unittest discover -s tests -p 'test_voz_enigma.py' -v
+      - run: python -m PyInstaller --collect-all sounddevice --collect-all _sounddevice_data --onedir --name DotaDraftOffline --add-data 'coach/datos/recursos/heroes_valve.json;coach/datos/recursos' draft_offline.py
       - run: .\dist\DotaDraftOffline\DotaDraftOffline.exe --self-test
       - uses: actions/upload-artifact@v4
         with:
