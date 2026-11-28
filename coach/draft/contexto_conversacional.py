@@ -31,11 +31,14 @@ class Contexto:
     candidatos: tuple = ()
     roles_declarados: tuple = ()
     archivado: bool = False
+    fase: int | None = None
 
 
 def validar(c, catalogo):
     if c.archivado is not True or type(c.rol) is not int or c.rol not in range(1,6):
         raise ValueError('Solo estudio archivado con posicion valida')
+    if c.fase is not None and (type(c.fase) is not int or c.fase not in (1, 2, 3)):
+        raise ValueError('Fase declarada inválida')
     grupos = (c.aliados,c.enemigos,c.vetados,c.candidatos)
     if any(not isinstance(g,tuple) for g in grupos):
         raise ValueError('Listas invalidas')

@@ -17,7 +17,7 @@ class ChatOffline:
 
     def estado(self):
         c=self.contexto
-        return f'Posición {c.rol}. Aliados: {self.nombres(c.aliados)}. Enemigos: {self.nombres(c.enemigos)}. Vetados: {self.nombres(c.vetados)}. Candidatos: {self.nombres(c.candidatos)}.' + ''.join(f' {self.nombres((h,))}: posición {r} declarada.' for h,r in c.roles_declarados)
+        return f'Posición {c.rol}. Fase declarada: {c.fase or "desconocida"}. Aliados: {self.nombres(c.aliados)}. Enemigos: {self.nombres(c.enemigos)}. Vetados: {self.nombres(c.vetados)}. Candidatos: {self.nombres(c.candidatos)}.' + ''.join(f' {self.nombres((h,))}: posición {r} declarada.' for h,r in c.roles_declarados)
 
     def responder(self, texto):
         t=normalizar(texto).strip(' .?!¿¡')

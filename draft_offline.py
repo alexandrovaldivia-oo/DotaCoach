@@ -8,6 +8,7 @@ from coach.draft.repertorio import cargar_repertorio
 from coach.draft.sesion_offline import analizar_sesion
 from coach.draft.chat_offline import ChatOffline
 from coach.draft.lenguaje_natural import proponer, aplicar
+from coach.draft.proveedor_interprete import crear_interprete, ErrorInterpretacion
 
 
 def catalogo_local():
@@ -75,26 +76,36 @@ def main():
             chat=ChatOffline(cat,Path(db.get()),int(inputs['semana'].get()),inputs['rango'].get())
         except Exception as exc:
             messagebox.showerror('Chat no disponible',str(exc)); return
-        win=tk.Toplevel(root); win.title('DotaCoach | ENIGMA - Estudio offline'); win.geometry('760x540'); win.configure(bg='#171b22')
+        win=tk.Toplevel(root); win.title('DotaCoach | ENIGMA - Estudio offline'); win.geometry('760x620'); win.minsize(480,360); win.configure(bg='#171b22')
         ttk.Label(win,text='ENIGMA | Asistente de estudio de Dota 2').pack(anchor='w',padx=12,pady=8)
         ttk.Label(win,text='Solo escenarios archivados. IA remota opcional; sin micrófono.').pack(anchor='w',padx=12)
-        historial=tk.Text(win,wrap='word',bg='#171b22',fg='#e5e7eb',insertbackground='white'); historial.pack(fill='both',expand=True,padx=12,pady=8)
+        historial=tk.Text(win,wrap='word',bg='#171b22',fg='#e5e7eb',insertbackground='white'); historial.pack(side='top',fill='both',expand=True,padx=12,pady=8)
         historial.insert('end','Coach: Soy tu asistente de estudio. Prueba Soy mid, Aliados: Lion, Axe, Mi Axe juega de 5, o Compara Puck o QoP.\n'); historial.config(state='disabled')
-        entrada=ttk.Entry(win); entrada.pack(fill='x',padx=12,pady=4)
+        controles=ttk.Frame(win); controles.pack(side='bottom',fill='x',padx=12,pady=8,before=historial)
+        entrada=ttk.Entry(controles); entrada.pack(fill='x',pady=4)
+        remoto=tk.BooleanVar(value=False)
+        ttk.Checkbutton(controles,text='Permitir IA remota si el chat local no comprende',variable=remoto).pack(anchor='w')
         def enviar(event=None):
             texto=entrada.get().strip()
-            if not texto: return
-            entrada.delete(0,'end')
+            if not texto or str(entrada.cget('state'))=='disabled': return
+            anterior=chat.contexto
             try: respuesta=chat.responder(texto)
-            except Exception as exc: respuesta='No pude procesar esa entrada: '+str(exc)
+            except ValueError as exc:
+                chat.contexto=anterior
+                if remoto.get():
+                    interpretar(); return
+                respuesta='No pude procesar esa entrada. Activa IA remota o usa un comando local.'
+            except Exception:
+                chat.contexto=anterior
+                respuesta='Error local de análisis. Revisa la base y los parámetros.'
+            entrada.delete(0,'end')
             historial.config(state='normal'); historial.insert('end','\nTú: '+texto+'\nCoach: '+respuesta+'\n'); historial.config(state='disabled'); historial.see('end')
         def interpretar():
             texto=entrada.get().strip()
             if not texto: return
             if not messagebox.askyesno('IA remota', '¿Enviar esta pregunta y el contexto de héroes y roles a tu proveedor de IA? Solo estudio archivado.',parent=win): return
             from coach.config import cargar
-            from coach.ai.proveedor import crear_proveedor
-            try: proveedor=crear_proveedor(cargar())
+            try: proveedor=crear_interprete(cargar())
             except Exception: messagebox.showerror('IA','Proveedor no disponible',parent=win); return
             anterior=chat.contexto
             # Copia independiente para no leer el contexto mutable desde el hilo.
@@ -102,14 +113,16 @@ def main():
             copia=copy.copy(chat)
             import queue
             resultados=queue.Queue()
-            boton.config(state='disabled'); entrada.config(state='disabled'); local.config(state='disabled')
+            boton.config(state='disabled'); entrada.config(state='disabled')
             def trabajo():
                 try: resultados.put((proponer(copia,proveedor,texto),None))
-                except Exception: resultados.put((None,'No pude interpretar la pregunta. Revisa la configuración o usa el chat local.'))
+                except ErrorInterpretacion as exc: resultados.put((None,str(exc)))
+                except ValueError: resultados.put((None,'La IA devolvió una propuesta inválida o incompatible con el contexto. No se aplicó ningún cambio.'))
+                except Exception: resultados.put((None,'Error interno del intérprete. No se aplicó ningún cambio.'))
             def revisar():
                 try: propuesta,error=resultados.get_nowait()
                 except queue.Empty: win.after(100,revisar); return
-                boton.config(state='normal'); entrada.config(state='normal'); local.config(state='normal')
+                boton.config(state='normal'); entrada.config(state='normal')
                 if error: messagebox.showerror('IA',error,parent=win); return
                 copia.contexto=propuesta[0]
                 if not messagebox.askyesno('Confirmar interpretación',copia.estado()+('\nAnalizar escenario.' if propuesta[1] else '')+'\n¿Aplicar?',parent=win): return
@@ -117,8 +130,8 @@ def main():
                 except Exception as exc: messagebox.showerror('IA',str(exc),parent=win); return
                 entrada.delete(0,'end'); historial.config(state='normal'); historial.insert('end','\nTú: '+texto+'\nCoach: '+respuesta+'\n'); historial.config(state='disabled'); historial.see('end')
             threading.Thread(target=trabajo,daemon=True).start(); win.after(100,revisar)
-        entrada.bind('<Return>',enviar); local=ttk.Button(win,text='Enviar local',command=enviar); local.pack(pady=5)
-        boton=ttk.Button(win,text='Interpretar con IA (opcional)',command=interpretar); boton.pack(pady=5); entrada.focus_set()
+        entrada.bind('<Return>',enviar)
+        boton=ttk.Button(controles,text='Enviar',command=enviar); boton.pack(pady=4); entrada.focus_set()
     ttk.Button(frame,text='Abrir chat de estudio offline',command=abrir_chat).pack(anchor='w')
     root.mainloop()
 
