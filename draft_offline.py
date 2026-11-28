@@ -11,6 +11,7 @@ from coach.draft.lenguaje_natural import proponer, aplicar
 from coach.draft.proveedor_interprete import crear_interprete, ErrorInterpretacion
 from coach.draft.voz_enigma import AudioWindows, PERSONALIDADES, respuesta_contextual
 from coach.draft.whisper_enigma import AudioWhisper, dispositivos
+from coach.draft.whisper_residente import AudioWhisperResidente
 
 
 def catalogo_local():
@@ -118,7 +119,7 @@ def main():
                 audio.dispositivo=mapa_micro.get(micro.get())
                 audio.umbral=int(sensibilidad.get())
                 audio.gpu=gpu.get()
-                motor_audio.set('Whisper local (GPU solicitada)' if audio.gpu else 'Whisper local (CPU)')
+                motor_audio.set(('Whisper residente' if isinstance(audio,AudioWhisperResidente) else 'Whisper CLI') + (' (GPU solicitada)' if audio.gpu else ' (CPU)'))
                 audio.progreso=lambda fase,nivel: cola_nivel.put((ident,fase,nivel))
             threading.Thread(target=trabajo_audio,daemon=True).start()
             def revisar_audio():
@@ -136,24 +137,26 @@ def main():
                 if not error and t=='micro' and str(entrada.cget('state'))!='disabled':
                     if isinstance(audio,AudioWhisper):
                         m=audio.metricas
-                        estado_audio.set(f"Captura: {m.get('captura_ms',0)} ms | Whisper: {m.get('transcripcion_ms',0)} ms")
+                        estado_audio.set(f"Captura: {m.get('captura_ms',0)} ms | Whisper: {m.get('transcripcion_ms',0)} ms | Carga: {m.get('carga_ms',0)} ms")
                     entrada.delete(0,'end'); entrada.insert(0,v); entrada.focus_set()
                     if auto_envio.get(): enviar()
             win.after(100,revisar_audio)
         def seleccionar_whisper():
             nonlocal audio
             if actividad['ocupado']: return
-            exe=filedialog.askopenfilename(parent=win,title='Selecciona whisper-cli.exe',filetypes=[('Ejecutable','*.exe')])
+            exe=filedialog.askopenfilename(parent=win,title='Selecciona whisper-cli.exe o whisper-server.exe',filetypes=[('Ejecutable','*.exe')])
             if not exe: return
             modelo=filedialog.askopenfilename(parent=win,title='Selecciona modelo multilingüe',filetypes=[('Modelo GGML','*.bin')])
             if not modelo: return
-            if Path(exe).name.lower()!='whisper-cli.exe' or '.en.' in Path(modelo).name.lower():
-                messagebox.showerror('Whisper','Selecciona whisper-cli.exe y un modelo multilingüe.',parent=win); return
-            audio=AudioWhisper(exe,modelo); motor_audio.set('Whisper local (CPU)'); estado_audio.set('Whisper configurado. Pulsa Escuchar una frase.')
+            if Path(exe).name.lower() not in ('whisper-cli.exe','whisper-server.exe') or '.en.' in Path(modelo).name.lower():
+                messagebox.showerror('Whisper','Selecciona whisper-cli.exe o whisper-server.exe y un modelo multilingüe.',parent=win); return
+            audio.cancelar()
+            clase=AudioWhisperResidente if Path(exe).name.lower()=='whisper-server.exe' else AudioWhisper
+            audio=clase(exe,modelo); motor_audio.set('Whisper residente (CPU)' if clase is AudioWhisperResidente else 'Whisper CLI (CPU)'); estado_audio.set('Whisper configurado. Pulsa Escuchar una frase.')
         def usar_windows():
             nonlocal audio
             if actividad['ocupado']: return
-            audio=AudioWindows(); motor_audio.set('Windows (respaldo)')
+            audio.cancelar(); audio=AudioWindows(); motor_audio.set('Windows (respaldo)')
         fila_motor=ttk.Frame(controles); fila_motor.pack(fill='x')
         ttk.Button(fila_motor,text='Configurar Whisper',command=seleccionar_whisper).pack(side='left')
         ttk.Button(fila_motor,text='Usar Windows',command=usar_windows).pack(side='left')

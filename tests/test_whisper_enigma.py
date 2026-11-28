@@ -56,3 +56,42 @@ class SegmentacionTest(unittest.TestCase):
         self.assertTrue(f.fin)
     def test_gpu_opcional(self):
         self.assertNotIn('-ng',argumentos('x','m','w','s',gpu=True))
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
+from coach.draft.whisper_residente import AudioWhisperResidente, argumentos_servidor, texto_respuesta
+
+class ResidenteTest(unittest.TestCase):
+    def test_loopback(self):
+        a=argumentos_servidor('x','m',1234,'/abc',False)
+        self.assertEqual(a[a.index('--host')+1],'127.0.0.1')
+        self.assertIn('-ng',a)
+        self.assertNotIn('-ng',argumentos_servidor('x','m',1234,'/abc',True))
+    def test_respuesta(self):
+        self.assertEqual(texto_respuesta({'text':' Soy mid '}),'Soy mid')
+        for bad in ({}, {'text':None},{'text':' '},{'text':'x'*1001}):
+            with self.assertRaises(RuntimeError): texto_respuesta(bad)
+    def test_reutilizacion(self):
+        a=AudioWhisperResidente('x','m'); p=Mock(); p.poll.return_value=None
+        a._servidor=p; a._gpu_servidor=False
+        self.assertEqual(a.iniciar(a.ticket(),Mock()),0)
+        a.cancelar(); p.kill.assert_called_once(); self.assertIsNone(a._servidor)
+    def test_transcripcion(self):
+        with tempfile.TemporaryDirectory() as d:
+            exe=Path(d)/'whisper-server.exe'; exe.touch(); modelo=Path(d)/'m.bin'; modelo.touch()
+            a=AudioWhisperResidente(exe,modelo); a._url='http://127.0.0.1:1234/abc'
+            s=Mock(); s.post.return_value.status_code=200; s.post.return_value.json.return_value={'text':'Lion y Axe'}
+            with patch('requests.Session') as factory, patch.object(a,'iniciar',return_value=0), patch.object(a,'capturar',return_value=b'\x00\x04'*16000):
+                factory.return_value.__enter__.return_value=s
+                self.assertEqual(a.escuchar(a.ticket()),'Lion y Axe')
+                self.assertFalse(s.trust_env)
+                self.assertEqual(s.post.call_args.args[0],a._url+'/inference')
+                self.assertFalse(s.post.call_args.kwargs['allow_redirects'])
+    def test_inicio(self):
+        a=AudioWhisperResidente('x','m'); p=Mock(); p.poll.return_value=None
+        s=Mock(); s.get.return_value.status_code=200; s.get.return_value.json.return_value={'status':'ok'}
+        with patch('coach.draft.whisper_residente.subprocess.Popen',return_value=p) as abrir:
+            a.iniciar(a.ticket(),s); a.iniciar(a.ticket(),s)
+            abrir.assert_called_once()
+        a.cerrar()
