@@ -1,0 +1,6 @@
+# Etapa 4.3: interpretación opcional de lenguaje natural
+Solo estudio archivado. No conecta GSI ni captura pantalla. No recomienda en competitivo. Reutiliza proveedor y configuración local existentes; nunca envía la clave en el prompt. El proveedor recibe pregunta y resumen de héroes/roles, con consentimiento por solicitud. No recibe SQLite. La respuesta JSON se valida contra el catálogo y se muestra para confirmación antes de aplicar. El modo local permanece disponible. La interfaz realiza la solicitud en un hilo separado.
+
+Pruebas: python -m unittest discover -s tests -p 'test_lenguaje_natural.py' -v. Proveedor simulado; falta prueba real con Gemini y Windows. El workflow añade requests y ejecuta también las pruebas del chat. Subir archivos visibles a la raíz y el workflow a .github/workflows. Descargar DotaDraftOffline-Windows. Abrir chat, escribir un escenario ficticio, pulsar Interpretar con IA, aceptar envío, revisar y confirmar la propuesta. No modificar las protecciones de Windows si bloquean el ejecutable.
+
+Reversión: revertir los commits del parche y del workflow; no cambia SQLite ni configuración. La IA no puede eliminar selecciones ni cambiar modo; las correcciones de listas siguen disponibles por comandos locales. No valida todavía meta, roles estadísticos ni vigencia.

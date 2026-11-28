@@ -1,11 +1,13 @@
 """Herramienta local para estudiar escenarios archivados. Sin red ni captura."""
 import json
 import sys
+import threading
 from pathlib import Path
 from coach.datos.catalogo_heroes import CatalogoHeroes, importar_heroes
 from coach.draft.repertorio import cargar_repertorio
 from coach.draft.sesion_offline import analizar_sesion
 from coach.draft.chat_offline import ChatOffline
+from coach.draft.lenguaje_natural import proponer, aplicar
 
 
 def catalogo_local():
@@ -75,7 +77,7 @@ def main():
             messagebox.showerror('Chat no disponible',str(exc)); return
         win=tk.Toplevel(root); win.title('DotaCoach | ENIGMA - Estudio offline'); win.geometry('760x540'); win.configure(bg='#171b22')
         ttk.Label(win,text='ENIGMA | Asistente de estudio de Dota 2').pack(anchor='w',padx=12,pady=8)
-        ttk.Label(win,text='Solo escenarios archivados. Sin micrófono ni IA remota todavía.').pack(anchor='w',padx=12)
+        ttk.Label(win,text='Solo escenarios archivados. IA remota opcional; sin micrófono.').pack(anchor='w',padx=12)
         historial=tk.Text(win,wrap='word',bg='#171b22',fg='#e5e7eb',insertbackground='white'); historial.pack(fill='both',expand=True,padx=12,pady=8)
         historial.insert('end','Coach: Soy tu asistente de estudio. Prueba Soy mid, Aliados: Lion, Axe, Mi Axe juega de 5, o Compara Puck o QoP.\n'); historial.config(state='disabled')
         entrada=ttk.Entry(win); entrada.pack(fill='x',padx=12,pady=4)
@@ -86,7 +88,37 @@ def main():
             try: respuesta=chat.responder(texto)
             except Exception as exc: respuesta='No pude procesar esa entrada: '+str(exc)
             historial.config(state='normal'); historial.insert('end','\nTú: '+texto+'\nCoach: '+respuesta+'\n'); historial.config(state='disabled'); historial.see('end')
-        entrada.bind('<Return>',enviar); ttk.Button(win,text='Enviar',command=enviar).pack(pady=5); entrada.focus_set()
+        def interpretar():
+            texto=entrada.get().strip()
+            if not texto: return
+            if not messagebox.askyesno('IA remota', '¿Enviar esta pregunta y el contexto de héroes y roles a tu proveedor de IA? Solo estudio archivado.',parent=win): return
+            from coach.config import cargar
+            from coach.ai.proveedor import crear_proveedor
+            try: proveedor=crear_proveedor(cargar())
+            except Exception: messagebox.showerror('IA','Proveedor no disponible',parent=win); return
+            anterior=chat.contexto
+            # Copia independiente para no leer el contexto mutable desde el hilo.
+            import copy
+            copia=copy.copy(chat)
+            import queue
+            resultados=queue.Queue()
+            boton.config(state='disabled'); entrada.config(state='disabled'); local.config(state='disabled')
+            def trabajo():
+                try: resultados.put((proponer(copia,proveedor,texto),None))
+                except Exception: resultados.put((None,'No pude interpretar la pregunta. Revisa la configuración o usa el chat local.'))
+            def revisar():
+                try: propuesta,error=resultados.get_nowait()
+                except queue.Empty: win.after(100,revisar); return
+                boton.config(state='normal'); entrada.config(state='normal'); local.config(state='normal')
+                if error: messagebox.showerror('IA',error,parent=win); return
+                copia.contexto=propuesta[0]
+                if not messagebox.askyesno('Confirmar interpretación',copia.estado()+('\nAnalizar escenario.' if propuesta[1] else '')+'\n¿Aplicar?',parent=win): return
+                try: respuesta=aplicar(chat,anterior,propuesta)
+                except Exception as exc: messagebox.showerror('IA',str(exc),parent=win); return
+                entrada.delete(0,'end'); historial.config(state='normal'); historial.insert('end','\nTú: '+texto+'\nCoach: '+respuesta+'\n'); historial.config(state='disabled'); historial.see('end')
+            threading.Thread(target=trabajo,daemon=True).start(); win.after(100,revisar)
+        entrada.bind('<Return>',enviar); local=ttk.Button(win,text='Enviar local',command=enviar); local.pack(pady=5)
+        boton=ttk.Button(win,text='Interpretar con IA (opcional)',command=interpretar); boton.pack(pady=5); entrada.focus_set()
     ttk.Button(frame,text='Abrir chat de estudio offline',command=abrir_chat).pack(anchor='w')
     root.mainloop()
 
