@@ -10,7 +10,7 @@ from coach.draft.chat_offline import ChatOffline
 from coach.draft.lenguaje_natural import proponer, aplicar
 from coach.draft.proveedor_interprete import crear_interprete, ErrorInterpretacion
 from coach.draft.voz_enigma import AudioWindows, PERSONALIDADES, respuesta_contextual
-from coach.draft.whisper_enigma import AudioWhisper
+from coach.draft.whisper_enigma import AudioWhisper, dispositivos
 
 
 def catalogo_local():
@@ -78,7 +78,7 @@ def main():
             chat=ChatOffline(cat,Path(db.get()),int(inputs['semana'].get()),inputs['rango'].get())
         except Exception as exc:
             messagebox.showerror('Chat no disponible',str(exc)); return
-        win=tk.Toplevel(root); win.title('DotaCoach | ENIGMA - Estudio offline'); win.geometry('800x700'); win.minsize(620,500); win.configure(bg='#171b22')
+        win=tk.Toplevel(root); win.title('DotaCoach | ENIGMA - Estudio offline'); win.geometry('850x760'); win.minsize(620,500); win.configure(bg='#171b22')
         ttk.Label(win,text='ENIGMA | Asistente de estudio de Dota 2').pack(anchor='w',padx=12,pady=8)
         ttk.Label(win,text='Solo escenarios archivados. IA remota opcional; audio local bajo demanda.').pack(anchor='w',padx=12)
         historial=tk.Text(win,wrap='word',bg='#171b22',fg='#e5e7eb',insertbackground='white'); historial.pack(side='top',fill='both',expand=True,padx=12,pady=8)
@@ -92,6 +92,7 @@ def main():
         auto_envio=tk.BooleanVar(value=False)
         import queue
         cola_audio=queue.Queue()
+        cola_nivel=queue.Queue()
         actividad={'id':0,'ocupado':False}
         voz=tk.BooleanVar(value=False); sarcasmo=tk.BooleanVar(value=False)
         personalidad=tk.StringVar(value='Profesional')
@@ -107,20 +108,35 @@ def main():
             if actividad['ocupado']:
                 estado_audio.set('Audio ocupado; usa Detener audio si deseas cancelar.'); return
             actividad['id']+=1; ident=actividad['id']; ticket=audio.ticket(); actividad['ocupado']=True
-            estado_audio.set(('Grabando 6 segundos y transcribiendo...' if isinstance(audio,AudioWhisper) else 'Escuchando...') if tipo=='micro' else 'Hablando...')
+            estado_audio.set(('Esperando voz...' if isinstance(audio,AudioWhisper) else 'Escuchando...') if tipo=='micro' else 'Hablando...')
             def trabajo_audio():
                 try:
                     valor=audio.escuchar(ticket) if tipo=='micro' else audio.hablar(texto,ticket)
                     cola_audio.put((ident,tipo,valor,None))
                 except Exception as exc: cola_audio.put((ident,tipo,None,str(exc) if isinstance(exc,RuntimeError) else 'Error de audio local.'))
+            if isinstance(audio,AudioWhisper) and tipo=='micro':
+                audio.dispositivo=mapa_micro.get(micro.get())
+                audio.umbral=int(sensibilidad.get())
+                audio.gpu=gpu.get()
+                motor_audio.set('Whisper local (GPU solicitada)' if audio.gpu else 'Whisper local (CPU)')
+                audio.progreso=lambda fase,nivel: cola_nivel.put((ident,fase,nivel))
             threading.Thread(target=trabajo_audio,daemon=True).start()
             def revisar_audio():
+                while True:
+                    try: iid,fase,nivel=cola_nivel.get_nowait()
+                    except queue.Empty: break
+                    if iid==actividad['id']:
+                        medidor['value']=min(100,nivel/20)
+                        estado_audio.set(f'{fase} | RMS {nivel:.0f}')
                 try: i,t,v,error=cola_audio.get_nowait()
                 except queue.Empty: win.after(100,revisar_audio); return
-                actividad['ocupado']=False
+                actividad['ocupado']=False; medidor['value']=0
                 if i!=actividad['id']: return
                 estado_audio.set(error or ('Transcripción lista. Revisa y envía.' if t=='micro' else 'Audio inactivo'))
                 if not error and t=='micro' and str(entrada.cget('state'))!='disabled':
+                    if isinstance(audio,AudioWhisper):
+                        m=audio.metricas
+                        estado_audio.set(f"Captura: {m.get('captura_ms',0)} ms | Whisper: {m.get('transcripcion_ms',0)} ms")
                     entrada.delete(0,'end'); entrada.insert(0,v); entrada.focus_set()
                     if auto_envio.get(): enviar()
             win.after(100,revisar_audio)
@@ -142,6 +158,24 @@ def main():
         ttk.Button(fila_motor,text='Configurar Whisper',command=seleccionar_whisper).pack(side='left')
         ttk.Button(fila_motor,text='Usar Windows',command=usar_windows).pack(side='left')
         ttk.Label(fila_motor,textvariable=motor_audio).pack(side='left')
+        fila_micro=ttk.Frame(controles); fila_micro.pack(fill='x')
+        mapa_micro={'Predeterminado':None}
+        micro=tk.StringVar(value='Predeterminado'); sensibilidad=tk.StringVar(value='80')
+        ttk.Label(fila_micro,text='Entrada').pack(side='left')
+        selector=ttk.Combobox(fila_micro,textvariable=micro,values=list(mapa_micro),state='readonly',width=38); selector.pack(side='left')
+        def actualizar_micros():
+            if actividad['ocupado']: return
+            try: lista=dispositivos()
+            except RuntimeError as exc: estado_audio.set(str(exc)); return
+            mapa_micro.clear(); mapa_micro['Predeterminado']=None
+            mapa_micro.update({f'{i}: {nombre}':i for i,nombre in lista})
+            selector.config(values=list(mapa_micro)); micro.set('Predeterminado')
+        ttk.Button(fila_micro,text='Listar micrófonos',command=actualizar_micros).pack(side='left')
+        ttk.Label(fila_micro,text='Umbral RMS').pack(side='left')
+        ttk.Combobox(fila_micro,textvariable=sensibilidad,values=['30','50','80','120','200'],state='readonly',width=5).pack(side='left')
+        gpu=tk.BooleanVar(value=False)
+        ttk.Checkbutton(controles,text='Solicitar GPU (requiere motor compatible)',variable=gpu).pack(anchor='w')
+        medidor=ttk.Progressbar(controles,maximum=100); medidor.pack(fill='x')
         ttk.Checkbutton(controles,text='Enviar transcripción automáticamente (opcional)',variable=auto_envio).pack(anchor='w')
         fila_audio=ttk.Frame(controles); fila_audio.pack(fill='x')
         ttk.Button(fila_audio,text='Escuchar una frase',command=lambda: audio_trabajo('micro') if str(entrada.cget('state'))!='disabled' else None).pack(side='left')
