@@ -9,6 +9,7 @@ from coach.draft.sesion_offline import analizar_sesion
 from coach.draft.chat_offline import ChatOffline
 from coach.draft.lenguaje_natural import proponer, aplicar
 from coach.draft.proveedor_interprete import crear_interprete, ErrorInterpretacion
+from coach.draft.voz_enigma import AudioWindows, PERSONALIDADES, respuesta_contextual
 
 
 def catalogo_local():
@@ -78,13 +79,57 @@ def main():
             messagebox.showerror('Chat no disponible',str(exc)); return
         win=tk.Toplevel(root); win.title('DotaCoach | ENIGMA - Estudio offline'); win.geometry('760x620'); win.minsize(480,360); win.configure(bg='#171b22')
         ttk.Label(win,text='ENIGMA | Asistente de estudio de Dota 2').pack(anchor='w',padx=12,pady=8)
-        ttk.Label(win,text='Solo escenarios archivados. IA remota opcional; sin micrófono.').pack(anchor='w',padx=12)
+        ttk.Label(win,text='Solo escenarios archivados. IA remota opcional; audio local bajo demanda.').pack(anchor='w',padx=12)
         historial=tk.Text(win,wrap='word',bg='#171b22',fg='#e5e7eb',insertbackground='white'); historial.pack(side='top',fill='both',expand=True,padx=12,pady=8)
         historial.insert('end','Coach: Soy tu asistente de estudio. Prueba Soy mid, Aliados: Lion, Axe, Mi Axe juega de 5, o Compara Puck o QoP.\n'); historial.config(state='disabled')
         controles=ttk.Frame(win); controles.pack(side='bottom',fill='x',padx=12,pady=8,before=historial)
         entrada=ttk.Entry(controles); entrada.pack(fill='x',pady=4)
         remoto=tk.BooleanVar(value=False)
         ttk.Checkbutton(controles,text='Permitir IA remota si el chat local no comprende',variable=remoto).pack(anchor='w')
+        audio=AudioWindows()
+        import queue
+        cola_audio=queue.Queue()
+        actividad={'id':0,'ocupado':False}
+        voz=tk.BooleanVar(value=False); sarcasmo=tk.BooleanVar(value=False)
+        personalidad=tk.StringVar(value='Profesional')
+        opciones=ttk.Frame(controles); opciones.pack(fill='x')
+        ttk.Checkbutton(opciones,text='Leer respuestas',variable=voz).pack(side='left')
+        ttk.Checkbutton(opciones,text='Humor',variable=sarcasmo).pack(side='left')
+        ttk.Combobox(opciones,textvariable=personalidad,values=PERSONALIDADES,state='readonly',width=21).pack(side='left')
+        estado_audio=tk.StringVar(value='Audio inactivo')
+        ttk.Label(controles,textvariable=estado_audio).pack(anchor='w')
+        def detener():
+            actividad['id']+=1; audio.cancelar(); estado_audio.set('Audio detenido')
+        def audio_trabajo(tipo,texto=''):
+            if actividad['ocupado']:
+                detener(); return
+            actividad['id']+=1; ident=actividad['id']; ticket=audio.ticket(); actividad['ocupado']=True
+            estado_audio.set('Escuchando...' if tipo=='micro' else 'Hablando...')
+            def trabajo_audio():
+                try:
+                    valor=audio.escuchar(ticket) if tipo=='micro' else audio.hablar(texto,ticket)
+                    cola_audio.put((ident,tipo,valor,None))
+                except Exception as exc: cola_audio.put((ident,tipo,None,str(exc) if isinstance(exc,RuntimeError) else 'Error de audio local.'))
+            threading.Thread(target=trabajo_audio,daemon=True).start()
+            def revisar_audio():
+                try: i,t,v,error=cola_audio.get_nowait()
+                except queue.Empty: win.after(100,revisar_audio); return
+                actividad['ocupado']=False
+                if i!=actividad['id']: return
+                estado_audio.set(error or ('Transcripción lista. Revisa y envía.' if t=='micro' else 'Audio inactivo'))
+                if not error and t=='micro' and str(entrada.cget('state'))!='disabled':
+                    entrada.delete(0,'end'); entrada.insert(0,v); entrada.focus_set()
+            win.after(100,revisar_audio)
+        fila_audio=ttk.Frame(controles); fila_audio.pack(fill='x')
+        ttk.Button(fila_audio,text='Escuchar una frase',command=lambda: audio_trabajo('micro') if str(entrada.cget('state'))!='disabled' else None).pack(side='left')
+        ttk.Button(fila_audio,text='Detener audio',command=detener).pack(side='left')
+        def cerrar_chat():
+            detener(); win.destroy()
+        win.protocol('WM_DELETE_WINDOW',cerrar_chat)
+        def publicar(texto,respuesta):
+            respuesta=respuesta_contextual(respuesta,chat.estado(),personalidad.get(),sarcasmo.get())
+            historial.config(state='normal'); historial.insert('end','\nTú: '+texto+'\nCoach: '+respuesta+'\n'); historial.config(state='disabled'); historial.see('end')
+            if voz.get(): audio_trabajo('voz',respuesta)
         def enviar(event=None):
             texto=entrada.get().strip()
             if not texto or str(entrada.cget('state'))=='disabled': return
@@ -99,7 +144,7 @@ def main():
                 chat.contexto=anterior
                 respuesta='Error local de análisis. Revisa la base y los parámetros.'
             entrada.delete(0,'end')
-            historial.config(state='normal'); historial.insert('end','\nTú: '+texto+'\nCoach: '+respuesta+'\n'); historial.config(state='disabled'); historial.see('end')
+            publicar(texto,respuesta)
         def interpretar():
             texto=entrada.get().strip()
             if not texto: return
@@ -128,7 +173,7 @@ def main():
                 if not messagebox.askyesno('Confirmar interpretación',copia.estado()+('\nAnalizar escenario.' if propuesta[1] else '')+'\n¿Aplicar?',parent=win): return
                 try: respuesta=aplicar(chat,anterior,propuesta)
                 except Exception as exc: messagebox.showerror('IA',str(exc),parent=win); return
-                entrada.delete(0,'end'); historial.config(state='normal'); historial.insert('end','\nTú: '+texto+'\nCoach: '+respuesta+'\n'); historial.config(state='disabled'); historial.see('end')
+                entrada.delete(0,'end'); publicar(texto,respuesta)
             threading.Thread(target=trabajo,daemon=True).start(); win.after(100,revisar)
         entrada.bind('<Return>',enviar)
         boton=ttk.Button(controles,text='Enviar',command=enviar); boton.pack(pady=4); entrada.focus_set()
