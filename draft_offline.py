@@ -10,6 +10,7 @@ from coach.draft.chat_offline import ChatOffline
 from coach.draft.lenguaje_natural import proponer, aplicar
 from coach.draft.proveedor_interprete import crear_interprete, ErrorInterpretacion
 from coach.draft.voz_enigma import AudioWindows, PERSONALIDADES, respuesta_contextual
+from coach.draft.whisper_enigma import AudioWhisper
 
 
 def catalogo_local():
@@ -77,7 +78,7 @@ def main():
             chat=ChatOffline(cat,Path(db.get()),int(inputs['semana'].get()),inputs['rango'].get())
         except Exception as exc:
             messagebox.showerror('Chat no disponible',str(exc)); return
-        win=tk.Toplevel(root); win.title('DotaCoach | ENIGMA - Estudio offline'); win.geometry('760x620'); win.minsize(480,360); win.configure(bg='#171b22')
+        win=tk.Toplevel(root); win.title('DotaCoach | ENIGMA - Estudio offline'); win.geometry('800x700'); win.minsize(620,500); win.configure(bg='#171b22')
         ttk.Label(win,text='ENIGMA | Asistente de estudio de Dota 2').pack(anchor='w',padx=12,pady=8)
         ttk.Label(win,text='Solo escenarios archivados. IA remota opcional; audio local bajo demanda.').pack(anchor='w',padx=12)
         historial=tk.Text(win,wrap='word',bg='#171b22',fg='#e5e7eb',insertbackground='white'); historial.pack(side='top',fill='both',expand=True,padx=12,pady=8)
@@ -87,6 +88,8 @@ def main():
         remoto=tk.BooleanVar(value=False)
         ttk.Checkbutton(controles,text='Permitir IA remota si el chat local no comprende',variable=remoto).pack(anchor='w')
         audio=AudioWindows()
+        motor_audio=tk.StringVar(value='Windows (respaldo)')
+        auto_envio=tk.BooleanVar(value=False)
         import queue
         cola_audio=queue.Queue()
         actividad={'id':0,'ocupado':False}
@@ -102,9 +105,9 @@ def main():
             actividad['id']+=1; audio.cancelar(); estado_audio.set('Audio detenido')
         def audio_trabajo(tipo,texto=''):
             if actividad['ocupado']:
-                detener(); return
+                estado_audio.set('Audio ocupado; usa Detener audio si deseas cancelar.'); return
             actividad['id']+=1; ident=actividad['id']; ticket=audio.ticket(); actividad['ocupado']=True
-            estado_audio.set('Escuchando...' if tipo=='micro' else 'Hablando...')
+            estado_audio.set(('Grabando 6 segundos y transcribiendo...' if isinstance(audio,AudioWhisper) else 'Escuchando...') if tipo=='micro' else 'Hablando...')
             def trabajo_audio():
                 try:
                     valor=audio.escuchar(ticket) if tipo=='micro' else audio.hablar(texto,ticket)
@@ -119,7 +122,27 @@ def main():
                 estado_audio.set(error or ('Transcripción lista. Revisa y envía.' if t=='micro' else 'Audio inactivo'))
                 if not error and t=='micro' and str(entrada.cget('state'))!='disabled':
                     entrada.delete(0,'end'); entrada.insert(0,v); entrada.focus_set()
+                    if auto_envio.get(): enviar()
             win.after(100,revisar_audio)
+        def seleccionar_whisper():
+            nonlocal audio
+            if actividad['ocupado']: return
+            exe=filedialog.askopenfilename(parent=win,title='Selecciona whisper-cli.exe',filetypes=[('Ejecutable','*.exe')])
+            if not exe: return
+            modelo=filedialog.askopenfilename(parent=win,title='Selecciona modelo multilingüe',filetypes=[('Modelo GGML','*.bin')])
+            if not modelo: return
+            if Path(exe).name.lower()!='whisper-cli.exe' or '.en.' in Path(modelo).name.lower():
+                messagebox.showerror('Whisper','Selecciona whisper-cli.exe y un modelo multilingüe.',parent=win); return
+            audio=AudioWhisper(exe,modelo); motor_audio.set('Whisper local (CPU)'); estado_audio.set('Whisper configurado. Pulsa Escuchar una frase.')
+        def usar_windows():
+            nonlocal audio
+            if actividad['ocupado']: return
+            audio=AudioWindows(); motor_audio.set('Windows (respaldo)')
+        fila_motor=ttk.Frame(controles); fila_motor.pack(fill='x')
+        ttk.Button(fila_motor,text='Configurar Whisper',command=seleccionar_whisper).pack(side='left')
+        ttk.Button(fila_motor,text='Usar Windows',command=usar_windows).pack(side='left')
+        ttk.Label(fila_motor,textvariable=motor_audio).pack(side='left')
+        ttk.Checkbutton(controles,text='Enviar transcripción automáticamente (opcional)',variable=auto_envio).pack(anchor='w')
         fila_audio=ttk.Frame(controles); fila_audio.pack(fill='x')
         ttk.Button(fila_audio,text='Escuchar una frase',command=lambda: audio_trabajo('micro') if str(entrada.cget('state'))!='disabled' else None).pack(side='left')
         ttk.Button(fila_audio,text='Detener audio',command=detener).pack(side='left')
