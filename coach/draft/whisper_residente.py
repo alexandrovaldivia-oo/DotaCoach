@@ -10,10 +10,10 @@ from pathlib import Path
 from coach.draft.whisper_enigma import AudioWhisper, PROMPT, escribir_wav
 
 
-def argumentos_servidor(exe, modelo, puerto, prefijo, gpu):
+def argumentos_servidor(exe, modelo, puerto, prefijo, gpu, rapido=False):
     return [str(exe), '-m', str(modelo), '-l', 'es', '--prompt', PROMPT,
             '--host', '127.0.0.1', '--port', str(puerto), '--request-path', prefijo,
-            '--public', str(Path(exe).parent / '__enigma_sin_web__')] + ([] if gpu else ['-ng'])
+            '--public', str(Path(exe).parent / '__enigma_sin_web__')] + ([] if gpu else ['-ng']) + (['--best-of', '1', '--beam-size', '1', '--no-fallback', '--no-context'] if rapido else [])
 
 
 def texto_respuesta(datos):
@@ -28,6 +28,8 @@ class AudioWhisperResidente(AudioWhisper):
         super().__init__(exe, modelo, **kw)
         self._servidor = None
         self._gpu_servidor = None
+        self.rapido = False
+        self._rapido_servidor = False
         self._url = None
         atexit.register(self.cerrar)
 
@@ -45,7 +47,7 @@ class AudioWhisperResidente(AudioWhisper):
 
     def iniciar(self, ticket, sesion):
         self.comprobar(ticket)
-        if self._servidor is not None and self._servidor.poll() is None and self._gpu_servidor == self.gpu:
+        if self._servidor is not None and self._servidor.poll() is None and self._gpu_servidor == self.gpu and self._rapido_servidor == self.rapido:
             return 0
         self.cerrar()
         inicio = time.perf_counter()
@@ -58,12 +60,13 @@ class AudioWhisperResidente(AudioWhisper):
             if ticket != self._generacion:
                 raise RuntimeError('Audio cancelado')
             try:
-                p = subprocess.Popen(argumentos_servidor(self.exe, self.modelo, puerto, prefijo, self.gpu),
+                p = subprocess.Popen(argumentos_servidor(self.exe, self.modelo, puerto, prefijo, self.gpu, self.rapido),
                     cwd=str(self.exe.parent), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                     creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
             except OSError:
                 raise RuntimeError('No se pudo iniciar whisper-server. Revisa DLL y protección de Windows.') from None
             self._servidor, self._url, self._gpu_servidor = p, url, self.gpu
+            self._rapido_servidor = self.rapido
         try:
             import requests
             while time.perf_counter() - inicio < 45:

@@ -95,3 +95,20 @@ class ResidenteTest(unittest.TestCase):
             a.iniciar(a.ticket(),s); a.iniciar(a.ticket(),s)
             abrir.assert_called_once()
         a.cerrar()
+
+class RapidoTest(unittest.TestCase):
+    def test_perfil_optativo(self):
+        normal=argumentos_servidor('x','m',1234,'/abc',True)
+        rapido=argumentos_servidor('x','m',1234,'/abc',True,True)
+        self.assertEqual(rapido[:len(normal)],normal)
+        self.assertEqual(rapido[len(normal):],['--best-of','1','--beam-size','1','--no-fallback','--no-context'])
+    def test_cambio_perfil_reinicia(self):
+        a=AudioWhisperResidente('x','m'); anterior=Mock(); anterior.poll.return_value=None
+        nuevo=Mock(); nuevo.poll.return_value=None
+        a._servidor=anterior; a._gpu_servidor=False; a.rapido=True
+        s=Mock(); s.get.return_value.status_code=200; s.get.return_value.json.return_value={'status':'ok'}
+        with patch('coach.draft.whisper_residente.subprocess.Popen',return_value=nuevo) as abrir:
+            a.iniciar(a.ticket(),s); a.iniciar(a.ticket(),s)
+            anterior.kill.assert_called_once(); abrir.assert_called_once()
+            self.assertIn('--no-fallback',abrir.call_args.args[0])
+        a.cerrar()
